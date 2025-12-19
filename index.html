@@ -270,6 +270,7 @@
         let handLandmarker, video;
         let caneTexture; 
         const debugInfo = document.getElementById('debug-info');
+        const HAS_UPLOADED_KEY = 'hasUserUploadedImages';
 
         async function init() {
             initThree();
@@ -277,7 +278,7 @@
             setupLights();
             createTextures();
             createParticles(); 
-            createDust();     
+            createDust();  
             loadPredefinedImages();
             setupPostProcessing();
             setupEvents();
@@ -295,8 +296,27 @@
             animate();
         }
 
+        function clearPhotos() {
+            // Remove meshes khỏi scene
+            photoMeshGroup.children.forEach(group => {
+                group.traverse(obj => {
+                    if (obj.isMesh) {
+                        if (obj.material?.map) obj.material.map.dispose();
+                        if (obj.material) obj.material.dispose();
+                        if (obj.geometry) obj.geometry.dispose();
+                    }
+                });
+            });
+
+            photoMeshGroup.clear();
+
+            // Remove particle PHOTO
+            particleSystem = particleSystem.filter(p => p.type !== 'PHOTO');
+        }
+
         // --- HỆ THỐNG LOAD ẢNH ĐA ĐỊNH DẠNG (MULTI-FORMAT LOADER) ---
         function loadPredefinedImages() {
+            if (localStorage.getItem(HAS_UPLOADED_KEY) === 'true') return;
             const loader = new THREE.TextureLoader();
             
             // 1. Load ảnh từ link online (Unsplash)
@@ -690,6 +710,8 @@
         }
         
         function handleImageUpload(e) {
+            localStorage.setItem(HAS_UPLOADED_KEY, 'true');
+            clearPhotos();
             const files = e.target.files;
             if(!files.length) return;
             
